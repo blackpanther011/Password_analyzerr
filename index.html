@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <title>Password Strength Checker</title>
+</head>
+<body>
+    <div class="group">
+        <h1 id="top">Password Strength Checker</h1>
+        <label for="password">Password:</label>
+        <div class="password-container">
+            <input type="password" id="password" placeholder="Type your password here" />
+            <input type="checkbox" id="show-password" onclick="togglePasswordVisibility()"> Show Password
+        </div>
+        <button onclick="checkPassword()">Check Password</button>
+        <p>Strength: <span id="strength">1%</span></p>
+        <ul id="suggestions"></ul>
+        <div class="power-container">
+            <div id="power-point"></div>
+        </div>
+    </div>
+
+    <script>
+        function togglePasswordVisibility() {
+            const passwordField = document.getElementById('password');
+            const showPasswordCheckbox = document.getElementById('show-password');
+            passwordField.type = showPasswordCheckbox.checked ? 'text' : 'password';
+        }
+
+        async function checkPassword() {
+            const password = document.getElementById('password').value;
+            const response = await fetch('http://localhost:8000/check_password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ password: password })
+            });
+
+            const data = await response.json();
+
+            // Update the strength text
+            document.getElementById('strength').innerText = data.width;
+
+            // Update the power-point bar's width and color
+            const powerPoint = document.getElementById('power-point');
+            powerPoint.style.width = data.width;  // Set width based on the server response
+            powerPoint.style.backgroundColor = data.color;  // Set color based on the server response
+
+            // Clear previous suggestions
+            const suggestionsList = document.getElementById('suggestions');
+            suggestionsList.innerHTML = '';
+
+            // Populate suggestions
+            data.suggestions.forEach(suggestion => {
+                const li = document.createElement('li');
+                li.textContent = suggestion;
+                suggestionsList.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
