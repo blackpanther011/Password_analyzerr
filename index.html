@@ -15,7 +15,7 @@
             <input type="checkbox" id="show-password" onclick="togglePasswordVisibility()"> Show Password
         </div>
         <button onclick="checkPassword()">Check Password</button>
-        <p>Strength: <span id="strength">1%</span></p>
+        <p>Strength: <span id="strength">Very Weak</span></p> <!-- Updated default text -->
         <ul id="suggestions"></ul>
         <div class="power-container">
             <div id="power-point"></div>
@@ -31,34 +31,59 @@
 
         async function checkPassword() {
             const password = document.getElementById('password').value;
-            const response = await fetch('http://localhost:5000/check_password', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ password: password })
-            });
 
-            const data = await response.json();
+            if (!password) {
+                alert("Please enter a password.");
+                return;
+            }
 
-            // Update the strength text
-            document.getElementById('strength').innerText = data.width;
+            try {
+                const response = await fetch('http://127.0.0.1:5000/check_password', { // Flask server URL
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password: password })
+                });
 
-            // Update the power-point bar's width and color
-            const powerPoint = document.getElementById('power-point');
-            powerPoint.style.width = data.width;  // Set width based on the server response
-            powerPoint.style.backgroundColor = data.color;  // Set color based on the server response
+                if (!response.ok) {
+                    alert("Error: Unable to check password.");
+                    return;
+                }
 
-            // Clear previous suggestions
-            const suggestionsList = document.getElementById('suggestions');
-            suggestionsList.innerHTML = '';
+                const data = await response.json();
 
-            // Populate suggestions
-            data.suggestions.forEach(suggestion => {
-                const li = document.createElement('li');
-                li.textContent = suggestion;
-                suggestionsList.appendChild(li);
-            });
+                // Update the strength text
+                document.getElementById('strength').innerText = data.strength; // Using "strength" from server response
+
+                // Update the power-point bar's width and color
+                const powerPoint = document.getElementById('power-point');
+                const strengthMap = {
+                    "Very Weak": { width: "20%", color: "red" },
+                    "Weak": { width: "40%", color: "orange" },
+                    "Moderate": { width: "60%", color: "yellow" },
+                    "Strong": { width: "80%", color: "lightgreen" },
+                    "Very Strong": { width: "100%", color: "green" },
+                };
+
+                const { width, color } = strengthMap[data.strength] || { width: "0%", color: "gray" };
+                powerPoint.style.width = width;
+                powerPoint.style.backgroundColor = color;
+
+                // Clear previous suggestions
+                const suggestionsList = document.getElementById('suggestions');
+                suggestionsList.innerHTML = '';
+
+                // Populate suggestions
+                data.suggestions.forEach(suggestion => {
+                    const li = document.createElement('li');
+                    li.textContent = suggestion;
+                    suggestionsList.appendChild(li);
+                });
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Failed to connect to the server.");
+            }
         }
     </script>
 </body>
